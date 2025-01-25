@@ -1,3 +1,4 @@
+mod colors;
 mod ray_tracing;
 
 use std::{num::NonZeroU32, rc::Rc};
@@ -23,13 +24,28 @@ fn main() -> anyhow::Result<()> {
     return Ok(());
 }
 
+trait View {
+    fn get_name(&self) -> &'static str;
+
+    fn step<'a>(
+        &mut self,
+        buffer: softbuffer::Buffer<'a, Rc<Window>, Rc<Window>>,
+        width: u32,
+        height: u32,
+    ) -> softbuffer::Buffer<'a, Rc<Window>, Rc<Window>>;
+}
+
 struct Application {
     window: Option<Rc<Window>>,
+    renderer: Box<dyn View>,
 }
 
 impl Default for Application {
     fn default() -> Self {
-        Self { window: None }
+        Self {
+            window: None,
+            renderer: Box::new(colors::ColorsView),
+        }
     }
 }
 
@@ -63,7 +79,7 @@ impl ApplicationHandler for Application {
 
                 let buffer = surface.buffer_mut().unwrap();
 
-                let buffer = ray_tracing::step(buffer, width, height);
+                let buffer = self.renderer.step(buffer, width, height);
 
                 buffer.present().unwrap();
 
@@ -77,7 +93,7 @@ impl ApplicationHandler for Application {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         println!("resumed");
         let window_attributes = Window::default_attributes()
-            .with_title("hi")
+            .with_title(self.renderer.get_name())
             .with_inner_size(LogicalSize::new(800, 600));
 
         self.window = Some(Rc::new(
