@@ -5,7 +5,7 @@ use softbuffer::Buffer;
 use winit::window::Window;
 
 use crate::utils::{
-    colors::{self, vec3àto_color, Color},
+    colors::{self, vec3àto_color},
     ray::Ray,
     sphere::{Hit, Sphere},
 };
@@ -82,29 +82,30 @@ impl super::View for RayTracingView {
 
         let upper_left = camera_center - Vec3::new(0., 0., focal_length) - u / 2. - v / 2.;
 
-        let upper_center = upper_left + 0.5 * (delta_v + delta_u);
+        let upper_center = upper_left + 0.5 * (delta_v + delta_u); // pixel00
 
         for index in 0..(width * height) {
             let x = index as f32 / width as f32;
             let y = index as f32 % width as f32;
 
+            let center = upper_center + (y * delta_u) + (x * delta_v);
+
             let mut color = Vec3::new(0., 0., 0.);
 
             for _ in 0..self.samples {
-                let rnd = Vec3::new(
-                    x + rand::random::<f32>().clamp(-0.5, 0.5),
-                    y + rand::random::<f32>().clamp(-0.5, 0.5),
-                    0.,
-                );
+                let d = upper_left
+                    + ((y + rand::random_range(-0.5..0.5)) * delta_u)
+                    + ((x + rand::random_range(-0.5..0.5)) * delta_v)
+                    - camera_center;
 
-                let center = upper_center + (y * delta_u) + (x * delta_v);
-                let d = center - camera_center;
-
-                let mut r = Ray::new(center, d);
+                let r = Ray::new(center, d);
 
                 let c = self.color(&r);
-                color += c / self.samples as f32;
+
+                color += c;
             }
+
+            let color = color / self.samples as f32;
 
             buffer[index as usize] = vec3àto_color(&color);
         }

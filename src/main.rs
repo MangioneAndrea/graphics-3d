@@ -3,7 +3,7 @@
 pub mod utils;
 mod views;
 
-use std::{num::NonZeroU32, rc::Rc};
+use std::{num::NonZeroU32, rc::Rc, time::Duration};
 
 use winit::{
     application::ApplicationHandler,
@@ -78,7 +78,9 @@ impl ApplicationHandler for Application {
 
                 let mut buffer = surface.buffer_mut().unwrap();
 
+                let now = std::time::Instant::now();
                 self.renderer.step(&mut buffer, width, height);
+                println!("Time: {}ms", now.elapsed().as_millis());
 
                 buffer.present().unwrap();
 
