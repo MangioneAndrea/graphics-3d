@@ -1,5 +1,5 @@
-mod colors;
-mod ray_tracing;
+pub mod utils;
+mod views;
 
 use std::{num::NonZeroU32, rc::Rc};
 
@@ -24,27 +24,16 @@ fn main() -> anyhow::Result<()> {
     return Ok(());
 }
 
-trait View {
-    fn get_name(&self) -> &'static str;
-
-    fn step<'a>(
-        &mut self,
-        buffer: softbuffer::Buffer<'a, Rc<Window>, Rc<Window>>,
-        width: u32,
-        height: u32,
-    ) -> softbuffer::Buffer<'a, Rc<Window>, Rc<Window>>;
-}
-
 struct Application {
     window: Option<Rc<Window>>,
-    renderer: Box<dyn View>,
+    renderer: Box<dyn views::View>,
 }
 
 impl Default for Application {
     fn default() -> Self {
         Self {
             window: None,
-            renderer: Box::new(colors::ColorsView),
+            renderer: Box::new(views::ColorsView),
         }
     }
 }
@@ -61,6 +50,14 @@ impl ApplicationHandler for Application {
             WindowEvent::CloseRequested => {
                 event_loop.exit();
             }
+            WindowEvent::KeyboardInput { event, .. } => match event.logical_key.as_ref() {
+                winit::keyboard::Key::Character("1") => self.renderer = Box::new(views::ColorsView),
+                winit::keyboard::Key::Character("2") => {
+                    self.renderer = Box::new(views::RayTracingView)
+                }
+                winit::keyboard::Key::Character("q") => std::process::exit(0),
+                _ => {}
+            },
             WindowEvent::RedrawRequested => {
                 let context = softbuffer::Context::new(window.clone()).unwrap();
                 let mut surface = softbuffer::Surface::new(&context, window.clone()).unwrap();
@@ -77,9 +74,9 @@ impl ApplicationHandler for Application {
                     )
                     .unwrap();
 
-                let buffer = surface.buffer_mut().unwrap();
+                let mut buffer = surface.buffer_mut().unwrap();
 
-                let buffer = self.renderer.step(buffer, width, height);
+                self.renderer.step(&mut buffer, width, height);
 
                 buffer.present().unwrap();
 
