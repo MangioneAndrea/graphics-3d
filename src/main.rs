@@ -1,3 +1,5 @@
+#![feature(test, const_black_box)]
+
 pub mod utils;
 mod views;
 
@@ -33,7 +35,7 @@ impl Default for Application {
     fn default() -> Self {
         Self {
             window: None,
-            renderer: Box::new(views::ColorsView),
+            renderer: Box::new(views::RayTracingView::default()),
         }
     }
 }
@@ -53,7 +55,7 @@ impl ApplicationHandler for Application {
             WindowEvent::KeyboardInput { event, .. } => match event.logical_key.as_ref() {
                 winit::keyboard::Key::Character("1") => self.renderer = Box::new(views::ColorsView),
                 winit::keyboard::Key::Character("2") => {
-                    self.renderer = Box::new(views::RayTracingView)
+                    self.renderer = Box::new(views::RayTracingView::default())
                 }
                 winit::keyboard::Key::Character("q") => std::process::exit(0),
                 _ => {}
