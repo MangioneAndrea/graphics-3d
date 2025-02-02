@@ -1,35 +1,40 @@
+use std::sync::Arc;
+
 use glam::Vec3;
 
 use super::{
     camera::Camera,
+    meshes::{Hit, Mesh},
     ray::Ray,
-    sphere::{Hit, Sphere},
 };
 
-fn compute_color<const N: usize>(spheres: &[Sphere; N], r: &Ray, max_depth: usize) -> Vec3 {
+fn compute_color<const N: usize>(meshes: &[Arc<dyn Mesh>; N], r: &Ray, max_depth: usize) -> Vec3 {
     if max_depth == 0 {
         return Vec3::new(0., 0., 0.);
     }
-    let mut closest_sphere: Option<&Sphere> = None;
+    let mut _closest_mesh: Option<&_> = None;
     let mut closest_hit: Option<Hit> = None;
 
-    for s in spheres {
-        let t = closest_hit.clone().map(|h| h.t).unwrap_or(f32::INFINITY);
+    for s in meshes {
+        let distance = closest_hit
+            .clone()
+            .map(|h| h.distance)
+            .unwrap_or(f32::INFINITY);
 
-        if let Some(hit) = s.hit(r, 0.001, t) {
-            closest_sphere = Some(s);
+        if let Some(hit) = s.hit(r, 0.001, distance) {
+            _closest_mesh = Some(s);
             closest_hit = Some(hit);
         }
     }
 
-    if let Some(t) = closest_hit {
-        let mut dir = t.normal + super::random_unit_vector();
+    if let Some(hit) = closest_hit {
+        let mut dir = hit.normal + super::random_unit_vector();
 
-        if dir.dot(t.normal) <= 0. {
+        if dir.dot(hit.normal) <= 0. {
             dir = -dir;
         }
 
-        return 0.1 * compute_color(spheres, &Ray::new(t.p, dir), max_depth - 1);
+        return 0.1 * compute_color(meshes, &Ray::new(hit.point, dir), max_depth - 1);
     }
 
     let dir = r.direction.normalize();
@@ -41,16 +46,23 @@ fn compute_color<const N: usize>(spheres: &[Sphere; N], r: &Ray, max_depth: usiz
     color
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct RayTracing<const N: usize> {
-    spheres: [Sphere; N],
+    spheres: [Arc<dyn Mesh>; N],
     max_depth: usize,
     samples: usize,
     camera: Camera,
 }
 
+unsafe impl<const N: usize> Send for RayTracing<N> {}
+
 impl<const N: usize> RayTracing<N> {
-    pub fn new(spheres: [Sphere; N], camera: Camera, max_depth: usize, samples: usize) -> Self {
+    pub fn new(
+        spheres: [Arc<dyn Mesh>; N],
+        camera: Camera,
+        max_depth: usize,
+        samples: usize,
+    ) -> Self {
         Self {
             spheres,
             max_depth,

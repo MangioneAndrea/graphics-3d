@@ -1,10 +1,11 @@
 use glam::Vec3;
 
-pub mod colors;
-pub mod ray;
-pub mod sphere;
-pub mod ray_tracing;
 pub mod camera;
+pub mod colors;
+pub mod materials;
+pub mod ray;
+pub mod ray_tracing;
+pub mod meshes;
 
 #[must_use]
 pub fn random_unit_vector() -> Vec3 {

@@ -1,14 +1,19 @@
-use std::sync::mpsc::Sender;
+use std::sync::{mpsc::Sender, Arc};
 
 use glam::Vec3;
 
 use crate::{
-    utils::{camera::Camera, colors::vec3àto_color, ray_tracing::RayTracing, sphere::Sphere},
+    utils::{
+        camera::Camera,
+        colors::vec3àto_color,
+        meshes::{sphere::Sphere, Mesh},
+        ray_tracing::RayTracing,
+    },
     ScreenChunk,
 };
 
 pub struct RayTracingView {
-    spheres: [Sphere; 2],
+    meshes: [Arc<dyn Mesh>; 2],
     samples: usize,
     max_depth: usize,
 }
@@ -16,9 +21,9 @@ pub struct RayTracingView {
 impl Default for RayTracingView {
     fn default() -> Self {
         Self {
-            spheres: [
-                Sphere::new(Vec3::new(0., 0., -1.), 0.5),
-                Sphere::new(Vec3::new(0., -100.5, -1.), 100.),
+            meshes: [
+                Arc::new(Sphere::new(Vec3::new(0., 0., -1.), 0.5)),
+                Arc::new(Sphere::new(Vec3::new(0., -100.5, -1.), 100.)),
             ],
             samples: 10,
             max_depth: 10,
@@ -45,10 +50,12 @@ impl super::View for RayTracingView {
 
         let step_size = (width * height) as usize / threads;
 
-        let rt = RayTracing::<2>::new(self.spheres.clone(), camera, samples, max_depth);
+        let rt = RayTracing::<2>::new(self.meshes.clone(), camera, samples, max_depth);
 
         for t in 0..threads {
             let buffer = buffer.clone();
+
+            let rt = rt.clone();
 
             std::thread::spawn(move || {
                 let mut sc = ScreenChunk {

@@ -2,7 +2,9 @@ use core::f32;
 
 use glam::Vec3;
 
-use super::ray::Ray;
+use crate::utils::ray::Ray;
+
+use super::{Hit, Mesh};
 
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub struct Sphere {
@@ -10,20 +12,8 @@ pub struct Sphere {
     radius: f32,
 }
 
-#[derive(Debug, Clone)]
-pub struct Hit {
-    pub t: f32,
-    pub p: Vec3,
-    pub normal: Vec3,
-    pub front_face: bool,
-}
-
-impl Sphere {
-    pub fn new(center: Vec3, radius: f32) -> Sphere {
-        Sphere { center, radius }
-    }
-
-    pub fn hit(&self, ray: &Ray, ray_t_min: f32, ray_t_max: f32) -> Option<Hit> {
+impl Mesh for Sphere {
+    fn hit(&self, ray: &Ray, ray_t_min: f32, ray_t_max: f32) -> Option<Hit> {
         let oc = self.center - ray.origin;
 
         let a = ray.direction.length_squared() + f32::MIN_POSITIVE;
@@ -39,19 +29,19 @@ impl Sphere {
 
         let sqrt_d = discriminant.sqrt();
 
-        let mut root = (h - sqrt_d) / a;
+        let mut distance = (h - sqrt_d) / a;
 
-        if root <= ray_t_min || ray_t_max <= root {
-            root = (h + sqrt_d) / a;
+        if distance <= ray_t_min || ray_t_max <= distance {
+            distance = (h + sqrt_d) / a;
 
-            if root <= ray_t_min || ray_t_max <= root {
+            if distance <= ray_t_min || ray_t_max <= distance {
                 return None;
             }
         }
 
-        let p = ray.at(root);
+        let point = ray.at(distance);
 
-        let normal: Vec3 = (p - self.center) / self.radius;
+        let normal: Vec3 = (point - self.center) / self.radius;
 
         let front_face = ray.direction.dot(normal) < 0.;
 
@@ -59,11 +49,17 @@ impl Sphere {
         let normal = if front_face { normal } else { -normal };
 
         Some(Hit {
-            t: root,
-            p,
+            distance,
+            point,
             normal,
             front_face,
         })
+    }
+}
+
+impl Sphere {
+    pub fn new(center: Vec3, radius: f32) -> Sphere {
+        Sphere { center, radius }
     }
 
     pub fn hit_naive2(&self, ray: &Ray) -> Option<f32> {
@@ -103,16 +99,13 @@ impl Sphere {
     }
 }
 
+#[cfg(test)]
 mod test {
     extern crate test;
-
-    #[cfg(test)]
     use super::Sphere;
-    #[cfg(test)]
+    use crate::utils::meshes::Mesh;
     use crate::utils::ray::Ray;
-    #[cfg(test)]
     use test::Bencher;
-    #[cfg(test)]
     const N: i32 = std::hint::black_box(1000);
 
     #[cfg(test)]
