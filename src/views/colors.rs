@@ -1,7 +1,4 @@
-use std::{rc::Rc, sync::mpsc::Sender};
-
-use softbuffer::Buffer;
-use winit::window::Window;
+use std::sync::mpsc::Sender;
 
 use crate::ScreenChunk;
 
@@ -28,6 +25,6 @@ impl super::View for ColorsView {
             sc.data.push(blue | (green << 8) | (red << 16));
         }
 
-        buffer.send(sc);
+        buffer.send(sc).unwrap();
     }
 }

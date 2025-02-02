@@ -4,7 +4,7 @@ use glam::Vec3;
 
 use super::ray::Ray;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Copy)]
 pub struct Sphere {
     center: Vec3,
     radius: f32,
@@ -26,7 +26,7 @@ impl Sphere {
     pub fn hit(&self, ray: &Ray, ray_t_min: f32, ray_t_max: f32) -> Option<Hit> {
         let oc = self.center - ray.origin;
 
-        let a = ray.direction.length_squared() + 0.000000000000000000000001;
+        let a = ray.direction.length_squared() + f32::MIN_POSITIVE;
         let h = ray.direction.dot(oc);
 
         let c = oc.length_squared() - self.radius * self.radius;
@@ -55,7 +55,8 @@ impl Sphere {
 
         let front_face = ray.direction.dot(normal) < 0.;
 
-        //let normal = if front_face { normal } else { -normal };
+        // Extremely expensive...
+        let normal = if front_face { normal } else { -normal };
 
         Some(Hit {
             t: root,
@@ -68,7 +69,7 @@ impl Sphere {
     pub fn hit_naive2(&self, ray: &Ray) -> Option<f32> {
         let oc = self.center - ray.origin;
 
-        let a = ray.direction.length_squared() + 0.000000000000000000000001;
+        let a = ray.direction.length_squared() + f32::MIN_POSITIVE;
         let h = ray.direction.dot(oc);
 
         let c = oc.length_squared() - self.radius * self.radius;
@@ -86,7 +87,7 @@ impl Sphere {
     fn hit_naive(&self, ray: &Ray) -> Option<f32> {
         let oc = self.center - ray.origin;
 
-        let a = ray.direction.dot(ray.direction) + 0.000000000000000000000001;
+        let a = ray.direction.dot(ray.direction) + f32::MIN_POSITIVE;
 
         let b = -2. * ray.direction.dot(oc);
 
@@ -123,6 +124,8 @@ mod test {
             Sphere::new(Vec3::new(0., 0., 0.), 12.),
             Sphere::new(Vec3::new(15., 15., 0.), 12.),
             Sphere::new(Vec3::new(0., 0., 10.), 1.),
+            Sphere::new(Vec3::new(0., 0., -1.), 0.5),
+            Sphere::new(Vec3::new(0., -100.5, -1.), 100.),
         ];
 
         let rays = vec![

@@ -3,7 +3,7 @@
 pub mod utils;
 mod views;
 
-use std::{num::NonZeroU32, rc::Rc, time::Duration};
+use std::{num::NonZeroU32, rc::Rc};
 
 use winit::{
     application::ApplicationHandler,
