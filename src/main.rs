@@ -29,6 +29,7 @@ fn main() -> anyhow::Result<()> {
 struct Application {
     window: Option<Rc<Window>>,
     renderer: Box<dyn views::View>,
+    ready: bool,
 }
 
 impl Default for Application {
@@ -36,8 +37,14 @@ impl Default for Application {
         Self {
             window: None,
             renderer: Box::new(views::RayTracingView::default()),
+            ready: false,
         }
     }
+}
+
+struct ScreenChunk {
+    from: usize,
+    data: Vec<u32>,
 }
 
 impl ApplicationHandler for Application {
@@ -78,13 +85,25 @@ impl ApplicationHandler for Application {
 
                 let mut buffer = surface.buffer_mut().unwrap();
 
-                let now = std::time::Instant::now();
-                self.renderer.step(&mut buffer, width, height);
-                println!("Time: {}ms", now.elapsed().as_millis());
+                if self.ready {
+                    let (tx, rx) = std::sync::mpsc::channel::<ScreenChunk>();
+
+                    let now = std::time::Instant::now();
+                    self.renderer.step(tx, width, height);
+                    println!("Time: {}", now.elapsed().as_millis());
+
+                    while let Ok(chunk) = rx.recv() {
+                        buffer[chunk.from..][..chunk.data.len()]
+                            .copy_from_slice(chunk.data.as_slice());
+
+                        // buffer[idx as usize] = c;
+                    }
+                }
 
                 buffer.present().unwrap();
 
                 self.window.as_ref().unwrap().request_redraw();
+                self.ready = true;
             }
 
             _ => {}

@@ -54,7 +54,7 @@ impl Sphere {
         let normal: Vec3 = (p - self.center) / self.radius;
 
         let front_face = ray.direction.dot(normal) < 0.;
-        //
+
         //let normal = if front_face { normal } else { -normal };
 
         Some(Hit {
