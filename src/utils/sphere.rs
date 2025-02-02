@@ -4,7 +4,7 @@ use glam::Vec3;
 
 use super::ray::Ray;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Sphere {
     center: Vec3,
     radius: f32,

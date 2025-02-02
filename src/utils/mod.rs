@@ -6,6 +6,7 @@ pub mod sphere;
 
 #[must_use]
 pub fn random_unit_vector() -> Vec3 {
+    // return Vec3::new(0.3, 0.3, 0.3);
     loop {
         let p = Vec3::new(
             rand::random_range(-1.0..1.),

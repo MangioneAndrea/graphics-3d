@@ -83,26 +83,27 @@ impl ApplicationHandler for Application {
                     )
                     .unwrap();
 
-                let mut buffer = surface.buffer_mut().unwrap();
-
                 if self.ready {
                     let (tx, rx) = std::sync::mpsc::channel::<ScreenChunk>();
 
                     let now = std::time::Instant::now();
                     self.renderer.step(tx, width, height);
-                    println!("Time: {}", now.elapsed().as_millis());
+
+                    let mut buffer = surface.buffer_mut().unwrap();
 
                     while let Ok(chunk) = rx.recv() {
                         buffer[chunk.from..][..chunk.data.len()]
                             .copy_from_slice(chunk.data.as_slice());
-
-                        // buffer[idx as usize] = c;
                     }
+
+                    println!("Time: {}", now.elapsed().as_millis());
+
+                    buffer.present().unwrap();
+                    self.window.as_ref().unwrap().request_redraw();
+                } else {
+                    self.window.as_ref().unwrap().request_redraw();
                 }
 
-                buffer.present().unwrap();
-
-                self.window.as_ref().unwrap().request_redraw();
                 self.ready = true;
             }
 
