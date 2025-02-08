@@ -41,7 +41,7 @@ impl Default for RayTracingView {
                 )),
             ],
             samples: 5,
-            max_depth: 10,
+            max_depth: 100,
         }
     }
 }
@@ -67,6 +67,7 @@ impl super::View for RayTracingView {
         ));
 
         for _ in 0..threads {
+            let should_stop = Arc::new(Mutex::new(false));
             let rows = rows.clone();
             let buffer = buffer.clone();
 
@@ -74,6 +75,11 @@ impl super::View for RayTracingView {
 
             // Draw row by row to allow multithreading
             std::thread::spawn(move || loop {
+                let stop = should_stop.clone();
+                if *stop.lock().unwrap() {
+                    break;
+                }
+
                 let y = {
                     let mut rows = rows.lock().unwrap();
                     if let Some(row) = rows.pop() {
@@ -93,7 +99,10 @@ impl super::View for RayTracingView {
                     sc.data.push(vec3àto_color(&color))
                 }
 
-                buffer.send(sc).unwrap();
+                // If there is no receiver, the thread can be killed
+                if let Err(_) = buffer.send(sc) {
+                    *stop.clone().lock().unwrap() = true;
+                };
             });
         }
     }
