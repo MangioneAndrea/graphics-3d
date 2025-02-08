@@ -15,6 +15,6 @@ pub struct Hit {
     pub material: Arc<dyn Material>,
 }
 
-pub trait Mesh: 'static {
+pub trait Mesh: 'static + Sync + Send {
     fn hit(&self, ray: &Ray, ray_t_min: f32, ray_t_max: f32) -> Option<Hit>;
 }

@@ -62,8 +62,9 @@ impl super::View for RayTracingView {
         let rt = RayTracing::<MESHES_COUNT>::new(self.meshes.clone(), camera, samples, max_depth);
 
         // Some threads are faster, so they can do multiple rows
-        let rows: Arc<Mutex<Vec<_>>> =
-            Arc::new(Mutex::new((0..height as usize).into_iter().collect()));
+        let rows = Arc::new(Mutex::new(
+            (0..height as usize).into_iter().collect::<Vec<_>>(),
+        ));
 
         for _ in 0..threads {
             let rows = rows.clone();

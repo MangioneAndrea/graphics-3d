@@ -51,8 +51,6 @@ pub struct RayTracing<const N: usize> {
     camera: Camera,
 }
 
-unsafe impl<const N: usize> Send for RayTracing<N> {}
-
 impl<const N: usize> RayTracing<N> {
     pub fn new(
         spheres: [Arc<dyn Mesh>; N],
