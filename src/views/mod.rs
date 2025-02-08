@@ -9,7 +9,5 @@ pub use ray_tracing::*;
 use crate::ScreenChunk;
 
 pub trait View {
-    fn get_name(&self) -> &'static str;
-
-    fn step<'a>(&mut self, tx: Sender<ScreenChunk>, width: u32, height: u32);
+    fn step(&mut self, tx: Sender<ScreenChunk>, width: u32, height: u32);
 }

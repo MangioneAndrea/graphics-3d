@@ -5,11 +5,7 @@ use crate::ScreenChunk;
 pub struct ColorsView;
 
 impl super::View for ColorsView {
-    fn get_name(&self) -> &'static str {
-        "Colors"
-    }
-
-    fn step<'a>(&mut self, buffer: Sender<ScreenChunk>, width: u32, height: u32) {
+    fn step(&mut self, buffer: Sender<ScreenChunk>, width: u32, height: u32) {
         let mut sc = ScreenChunk {
             from: 0,
             data: vec![],

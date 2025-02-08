@@ -1,15 +1,23 @@
 use core::f32;
+use std::sync::Arc;
 
 use glam::Vec3;
 
-use crate::utils::ray::Ray;
+use crate::utils::{materials::Material, ray::Ray};
 
 use super::{Hit, Mesh};
 
-#[derive(Debug, Clone, PartialEq, Copy)]
+#[derive(Debug, Clone)]
 pub struct Sphere {
     center: Vec3,
     radius: f32,
+    material: Arc<dyn Material>,
+}
+
+impl PartialEq for Sphere {
+    fn eq(&self, other: &Self) -> bool {
+        self.center == other.center && self.radius == other.radius
+    }
 }
 
 impl Mesh for Sphere {
@@ -53,13 +61,18 @@ impl Mesh for Sphere {
             point,
             normal,
             front_face,
+            material: self.material.clone(),
         })
     }
 }
 
 impl Sphere {
-    pub fn new(center: Vec3, radius: f32) -> Sphere {
-        Sphere { center, radius }
+    pub fn new(center: Vec3, radius: f32, material: Arc<dyn Material>) -> Sphere {
+        Sphere {
+            center,
+            radius,
+            material,
+        }
     }
 
     pub fn hit_naive2(&self, ray: &Ray) -> Option<f32> {
@@ -111,14 +124,14 @@ mod test {
     #[cfg(test)]
     fn test_examples() -> (Vec<Sphere>, Vec<Ray>) {
         use super::Sphere;
-        use crate::utils::ray::Ray;
+        use crate::utils::{colors::BLACK, materials::metal::Metal, ray::Ray};
         use glam::Vec3;
         let spheres = vec![
-            Sphere::new(Vec3::new(0., 0., 0.), 12.),
-            Sphere::new(Vec3::new(15., 15., 0.), 12.),
-            Sphere::new(Vec3::new(0., 0., 10.), 1.),
-            Sphere::new(Vec3::new(0., 0., -1.), 0.5),
-            Sphere::new(Vec3::new(0., -100.5, -1.), 100.),
+            Sphere::new(Vec3::new(0., 0., 0.), 12., Metal::new(BLACK)),
+            Sphere::new(Vec3::new(15., 15., 0.), 12., Metal::new(BLACK)),
+            Sphere::new(Vec3::new(0., 0., 10.), 1., Metal::new(BLACK)),
+            Sphere::new(Vec3::new(0., 0., -1.), 0.5, Metal::new(BLACK)),
+            Sphere::new(Vec3::new(0., -100.5, -1.), 100., Metal::new(BLACK)),
         ];
 
         let rays = vec![
@@ -136,7 +149,9 @@ mod test {
 
         for s in &spheres {
             for r in &rays {
-                let a = s.hit(r, f32::NEG_INFINITY, f32::INFINITY).map(|el| el.t);
+                let a = s
+                    .hit(r, f32::NEG_INFINITY, f32::INFINITY)
+                    .map(|el| el.distance);
                 let b = s.hit_naive2(r);
                 let c = s.hit_naive(r);
                 assert_eq!(a, b);
@@ -153,7 +168,10 @@ mod test {
             for _ in 0..N {
                 for s in &spheres {
                     for r in &rays {
-                        v.push(s.hit(r, f32::NEG_INFINITY, f32::INFINITY).map(|e| e.t));
+                        v.push(
+                            s.hit(r, f32::NEG_INFINITY, f32::INFINITY)
+                                .map(|e| e.distance),
+                        );
                     }
                 }
             }

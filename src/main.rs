@@ -29,7 +29,6 @@ fn main() -> anyhow::Result<()> {
 struct Application {
     window: Option<Rc<Window>>,
     renderer: Box<dyn views::View>,
-    ready: bool,
 }
 
 impl Default for Application {
@@ -37,7 +36,6 @@ impl Default for Application {
         Self {
             window: None,
             renderer: Box::new(views::RayTracingView::default()),
-            ready: false,
         }
     }
 }
@@ -60,14 +58,21 @@ impl ApplicationHandler for Application {
                 event_loop.exit();
             }
             WindowEvent::KeyboardInput { event, .. } => match event.logical_key.as_ref() {
-                winit::keyboard::Key::Character("1") => self.renderer = Box::new(views::ColorsView),
+                winit::keyboard::Key::Character("1") => {
+                    println!("Now rendering 1");
+                    self.renderer = Box::new(views::ColorsView);
+                    self.window.as_ref().unwrap().request_redraw();
+                }
                 winit::keyboard::Key::Character("2") => {
-                    self.renderer = Box::new(views::RayTracingView::default())
+                    println!("Now rendering 2");
+                    self.renderer = Box::new(views::RayTracingView::default());
+                    self.window.as_ref().unwrap().request_redraw();
                 }
                 winit::keyboard::Key::Character("q") => std::process::exit(0),
                 _ => {}
             },
             WindowEvent::RedrawRequested => {
+                println!("redraw");
                 let context = softbuffer::Context::new(window.clone()).unwrap();
                 let mut surface = softbuffer::Surface::new(&context, window.clone()).unwrap();
 
@@ -83,28 +88,20 @@ impl ApplicationHandler for Application {
                     )
                     .unwrap();
 
-                if self.ready {
-                    let (tx, rx) = std::sync::mpsc::channel::<ScreenChunk>();
+                let (tx, rx) = std::sync::mpsc::channel::<ScreenChunk>();
 
-                    let now = std::time::Instant::now();
-                    self.renderer.step(tx, width, height);
+                let now = std::time::Instant::now();
+                self.renderer.step(tx, width, height);
 
-                    let mut buffer = surface.buffer_mut().unwrap();
+                let mut buffer = surface.buffer_mut().unwrap();
 
-                    while let Ok(chunk) = rx.recv() {
-                        buffer[chunk.from..][..chunk.data.len()]
-                            .copy_from_slice(chunk.data.as_slice());
-                    }
-
-                    println!("Time: {}", now.elapsed().as_millis());
-
-                    buffer.present().unwrap();
-                    self.window.as_ref().unwrap().request_redraw();
-                } else {
-                    self.window.as_ref().unwrap().request_redraw();
+                while let Ok(chunk) = rx.recv() {
+                    buffer[chunk.from..][..chunk.data.len()].copy_from_slice(chunk.data.as_slice());
                 }
 
-                self.ready = true;
+                println!("Time: {}", now.elapsed().as_millis());
+
+                buffer.present().unwrap();
             }
 
             _ => {}
@@ -114,7 +111,7 @@ impl ApplicationHandler for Application {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         println!("resumed");
         let window_attributes = Window::default_attributes()
-            .with_title(self.renderer.get_name())
+            .with_title("press: q to quit | 1 colors | 2 ray tracing")
             .with_inner_size(LogicalSize::new(800, 600));
 
         self.window = Some(Rc::new(

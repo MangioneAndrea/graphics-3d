@@ -1,6 +1,8 @@
+use std::sync::Arc;
+
 use glam::Vec3;
 
-use super::ray::Ray;
+use super::{materials::Material, ray::Ray};
 
 pub mod sphere;
 
@@ -10,8 +12,9 @@ pub struct Hit {
     pub point: Vec3,
     pub normal: Vec3,
     pub front_face: bool,
+    pub material: Arc<dyn Material>,
 }
 
-pub trait Mesh: 'static{
+pub trait Mesh: 'static {
     fn hit(&self, ray: &Ray, ray_t_min: f32, ray_t_max: f32) -> Option<Hit>;
 }

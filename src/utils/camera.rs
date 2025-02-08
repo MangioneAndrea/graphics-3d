@@ -1,6 +1,6 @@
 use glam::Vec3;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct Camera {
     pub center: Vec3,
     pub delta_u: Vec3,

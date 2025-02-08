@@ -4,13 +4,14 @@ use glam::Vec3;
 
 use super::{
     camera::Camera,
+    colors::{self, SKY_BLUE, WHITE},
     meshes::{Hit, Mesh},
     ray::Ray,
 };
 
 fn compute_color<const N: usize>(meshes: &[Arc<dyn Mesh>; N], r: &Ray, max_depth: usize) -> Vec3 {
     if max_depth == 0 {
-        return Vec3::new(0., 0., 0.);
+        return colors::BLACK;
     }
     let mut _closest_mesh: Option<&_> = None;
     let mut closest_hit: Option<Hit> = None;
@@ -28,20 +29,16 @@ fn compute_color<const N: usize>(meshes: &[Arc<dyn Mesh>; N], r: &Ray, max_depth
     }
 
     if let Some(hit) = closest_hit {
-        let mut dir = hit.normal + super::random_unit_vector();
+        let (scattered, attenuation) = hit.material.scatter(r, &hit);
 
-        if dir.dot(hit.normal) <= 0. {
-            dir = -dir;
-        }
-
-        return 0.1 * compute_color(meshes, &Ray::new(hit.point, dir), max_depth - 1);
+        return attenuation * compute_color(meshes, &scattered, max_depth - 1);
     }
 
     let dir = r.direction.normalize();
 
     let a = (dir.y + 1.) / 2.;
 
-    let color = (1.0 - a) * Vec3::new(255., 255., 255.) + a * Vec3::new(127., 180., 255.);
+    let color = (1.0 - a) * WHITE + a * SKY_BLUE;
 
     color
 }
@@ -76,8 +73,8 @@ impl<const N: usize> RayTracing<N> {
 
         for _ in 0..self.samples {
             let d = self.camera.upper_left
-                + ((y + rand::random_range(-0.5..0.5)) * self.camera.delta_u)
-                + ((x + rand::random_range(-0.5..0.5)) * self.camera.delta_v)
+                + ((x + rand::random_range(-0.5..0.5)) * self.camera.delta_u)
+                + ((y + rand::random_range(-0.5..0.5)) * self.camera.delta_v)
                 - self.camera.center;
 
             let r = Ray::new(self.camera.center, d);
